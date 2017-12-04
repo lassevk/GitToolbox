@@ -24,5 +24,8 @@ while true; do
         done <<< "$MERGED_INTO"
         break;
     fi;
-    CURRENT_COMMIT_SHA=$(git rev-parse $CURRENT_COMMIT_SHA~1 2>/dev/null)
+    if ! CURRENT_COMMIT_SHA=$(git rev-parse $CURRENT_COMMIT_SHA~1 2>/dev/null); then
+        echo unable to find the likely source branch, reached start of history
+        break
+    fi;
 done
