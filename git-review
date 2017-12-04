@@ -1,0 +1,47 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+BRANCH_REF="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH_REF=""
+if [ -z "$BRANCH_REF" ]; then
+    echo "not on a branch"
+    exit 1
+fi;
+BRANCH=$(git rev-parse --abbrev-ref $BRANCH_REF)
+UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+if [ -z "$UPSTREAM_BRANCH" ]; then
+    echo "$BRANCH does not have an upstream branch"
+    exit 1
+fi;
+
+BEHIND=$(git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
+AHEAD=$(git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
+
+if [ -z "$BEHIND" ]; then
+    if [ -z "$AHEAD" ]; then
+        # Neither ahead or behind
+        echo "Nothing to review, branch $BRANCH is up to date with respect to $UPSTREAM_BRANCH"
+        exit 0
+    else
+        # Ahead, not behind
+        echo "$BRANCH is ahead of $UPSTREAM_BRANCH"
+        git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        echo suggestion: use git push to push your commits to the remote
+    fi;
+else
+    if [ -z "$AHEAD" ]; then
+        # Behind, not ahead
+        echo "$BRANCH is behind $UPSTREAM_BRANCH"
+        git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        echo suggestion: use git ff to bring your local repository up to date
+    else
+        # Ahead and behind
+        echo "$BRANCH is ahead of $UPSTREAM_BRANCH by these commits"
+        git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        echo "And behind by these commits"
+        git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+    fi;
+fi;

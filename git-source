@@ -1,0 +1,28 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+if [ -z "$1" ]; then
+    CURRENT_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null)
+else
+    CURRENT_COMMIT_SHA=$(git rev-parse $1 2>/dev/null)
+fi;
+
+while true; do
+    if ! git log -1 $CURRENT_COMMIT_SHA --date=relative --pretty=tformat:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit; then
+        break
+    fi;
+    MERGED_INTO=$(git branch -a --contains $CURRENT_COMMIT_SHA | grep "^\s*remotes/.*" | grep "\(develop\|release\)/" | sed -e "s/^\s*remotes\///" 2>/dev/null)
+    if ! [ -z "$MERGED_INTO" ]; then
+        echo "  the above commit was found in the following branches"
+        # echo $MERGED_INTO
+        while read line; do
+            echo "   * $line"
+        done <<< "$MERGED_INTO"
+        break;
+    fi;
+    CURRENT_COMMIT_SHA=$(git rev-parse $CURRENT_COMMIT_SHA~1 2>/dev/null)
+done

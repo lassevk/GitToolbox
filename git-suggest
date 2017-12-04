@@ -1,0 +1,68 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+BRANCH_REF="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH_REF=""
+if [ -z "$BRANCH_REF" ]; then
+    echo "not on a branch"
+    exit 1
+fi;
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+if [ -z "$UPSTREAM_BRANCH" ]; then
+    echo "$BRANCH does not have an upstream branch"
+    exit 1
+fi;
+
+SUGGESTIONS=0
+
+git fetch --all
+echo ""
+CLEAN=
+if ! [ -z "$(git status --porcelain)" ]; then
+    echo "Working folder is not in a clean state"
+    echo "  suggestion: consider committing your work"
+    echo ""
+    CLEAN=", AFTER you've committed your changes or otherwise made your working copy clean"
+    SUGGESTIONS=1
+fi;
+
+BEHIND=$(git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
+AHEAD=$(git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
+
+if [ -z "$BEHIND" ]; then
+    if [ -z "$AHEAD" ]; then
+        # Neither ahead or behind
+        :
+    else
+        # Ahead, not behind
+        echo "Local '$BRANCH' is ahead of remote '$UPSTREAM_BRANCH'"
+        echo "  suggestion: consider pushing to bring the remote up to date"
+        echo "   > git push"
+        echo ""
+        SUGGESTIONS=1
+    fi;
+else
+    if [ -z "$AHEAD" ]; then
+        # Behind, not ahead
+        echo "Local '$BRANCH' is behind remote '$UPSTREAM_BRANCH'"
+        echo "  suggestion: consider merging to bring it up to date$CLEAN"
+        echo "   > git merge"
+        echo ""
+        SUGGESTIONS=1
+    else
+        # Ahead and behind
+        echo "Local '$BRANCH' is both ahead of and behind remote '$UPSTREAM_BRANCH'"
+        echo "  suggestion: consider merging to bring it up to date$CLEAN"
+        echo "   > git merge"
+        echo ""
+        SUGGESTIONS=1
+    fi;
+fi;
+
+if [ "$SUGGESTIONS" -eq "0" ]; then
+    echo no suggestions available
+fi;
