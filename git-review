@@ -17,8 +17,8 @@ if [ -z "$UPSTREAM_BRANCH" ]; then
     exit 1
 fi;
 
-BEHIND=$(git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
-AHEAD=$(git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit)
+BEHIND=$(git log $BRANCH..$UPSTREAM_BRANCH)
+AHEAD=$(git log $UPSTREAM_BRANCH..$BRANCH)
 
 if [ -z "$BEHIND" ]; then
     if [ -z "$AHEAD" ]; then
@@ -28,20 +28,20 @@ if [ -z "$BEHIND" ]; then
     else
         # Ahead, not behind
         echo "$BRANCH is ahead of $UPSTREAM_BRANCH"
-        git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        git lg $UPSTREAM_BRANCH..$BRANCH
         echo suggestion: use git push to push your commits to the remote
     fi;
 else
     if [ -z "$AHEAD" ]; then
         # Behind, not ahead
         echo "$BRANCH is behind $UPSTREAM_BRANCH"
-        git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        git lg $BRANCH..$UPSTREAM_BRANCH
         echo suggestion: use git ff to bring your local repository up to date
     else
         # Ahead and behind
         echo "$BRANCH is ahead of $UPSTREAM_BRANCH by these commits"
-        git log $UPSTREAM_BRANCH..$BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        git lg $UPSTREAM_BRANCH..$BRANCH
         echo "And behind by these commits"
-        git log $BRANCH..$UPSTREAM_BRANCH --date=relative --pretty=tformat:'  %C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit
+        git lg $BRANCH..$UPSTREAM_BRANCH
     fi;
 fi;

@@ -12,7 +12,7 @@ else
 fi;
 
 while true; do
-    if ! git log -1 $CURRENT_COMMIT_SHA --date=relative --pretty=tformat:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit; then
+    if ! git lg -1 $CURRENT_COMMIT_SHA; then
         break
     fi;
     MERGED_INTO=$(git branch -a --contains $CURRENT_COMMIT_SHA | grep "^\s*remotes/.*" | grep "\(develop\|release\)/" | sed -e "s/^\s*remotes\///" 2>/dev/null)
@@ -24,5 +24,8 @@ while true; do
         done <<< "$MERGED_INTO"
         break;
     fi;
-    CURRENT_COMMIT_SHA=$(git rev-parse $CURRENT_COMMIT_SHA~1 2>/dev/null)
+    if ! CURRENT_COMMIT_SHA=$(git rev-parse $CURRENT_COMMIT_SHA~1 2>/dev/null); then
+        echo unable to find the likely source branch, reached start of history
+        break
+    fi;
 done
