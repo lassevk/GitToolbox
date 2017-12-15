@@ -5,4 +5,4 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi;
 
-git log --date=relative --pretty=tformat:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit $*
+git log --graph --date=relative --pretty=tformat:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %C(yellow)(%an %ad)%Creset' --decorate --abbrev-commit $*
