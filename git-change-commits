@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+{ VAR=$1; OLD=$2; NEW=$3; shift 3; git filter-branch --env-filter "if [ \"$`echo $VAR`\" = '$OLD' ]; then export $VAR='$NEW'; fi" $@; };
