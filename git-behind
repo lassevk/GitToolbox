@@ -10,10 +10,14 @@ if [ -z "$BRANCH" ]; then
     echo "not on a branch"
     exit 1
 fi;
-UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+UPSTREAM_BRANCH=$1
 if [ -z "$UPSTREAM_BRANCH" ]; then
-    echo "$BRANCH does not have an upstream branch"
-    exit 1
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
 fi;
 
+echo "Comparing with $UPSTREAM_BRANCH"
 git lg $BRANCH..$UPSTREAM_BRANCH $*
