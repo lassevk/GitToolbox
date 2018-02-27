@@ -58,6 +58,8 @@ else
         echo "Local '$BRANCH' is both ahead of and behind remote '$UPSTREAM_BRANCH'"
         echo "  suggestion: consider merging to bring it up to date$CLEAN"
         echo "   > git merge"
+        echo "  suggestion: consider rebasing to bring it up to date$CLEAN"
+        echo "   > git rebase $UPSTREAM_BRANCH"
         echo ""
         SUGGESTIONS=1
     fi;
