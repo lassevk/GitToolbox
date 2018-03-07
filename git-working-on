@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ "$*" == "--clear" ]; then
+    echo "Clearing working-on git commit message template"
+    git config --global --unset commit.template
+    if [ -f ~/.gitmessage ]; then
+        rm ~/.gitmessage
+    fi
+elif [ ! -z "$*" ]; then
+    echo "Setting working-on git commit message template to: $*"
+    echo "$*:" >~/.gitmessage
+    git config --global commit.template ~/.gitmessage
+else
+    if [ -f ~/.gitmessage ]; then
+        echo "Current working-on git commit message template is: $(<~/.gitmessage)"
+        echo Use 'git working-on --clear' to clear
+    else
+        echo "There is no working-on git commit message template configured"
+        echo "Use 'git working-on XYZ' to change"
+    fi
+fi
