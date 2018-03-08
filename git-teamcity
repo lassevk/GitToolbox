@@ -1,0 +1,23 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+URL=$(git config --local integration.teamcity)
+if [ -z "$URL" ]; then
+    echo "Use git config --local integration.teamcity \"(url to TeamCity build configuration)\""
+    echo "Add the keyword <BRANCH> with the brackets in place where the branch name should be specified"
+    echo "Leave out the <BRANCH> keyword if the TeamCity build configuration is only for the current branch"
+    exit 1
+fi
+
+BRANCH=$1
+if [ -z "$BRANCH" ]; then
+    BRANCH=$(git symbolic-ref HEAD)
+    BRANCH=${BRANCH#refs/heads/}
+fi
+
+URL=${URL/<BRANCH>/$BRANCH}
+start "$URL"

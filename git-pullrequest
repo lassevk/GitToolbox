@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+URL=$(git config --local integration.pullrequest)
+if [ -z "$URL" ]; then
+    echo "Use git config --local integration.pullrequest \"(url to pull request web interface)\""
+    echo "Add the keyword <SOURCE> with the brackets in place where the current source branch name should be specified"
+    echo "Add the keyword <TARGET> with the brackets in place where the target branch name should be specified"
+    exit 1
+fi
+
+SOURCE_BRANCH=$(git symbolic-ref HEAD)
+TARGET_BRANCH=$1
+
+if [ -z "$TARGET_BRANCH" ]; then
+    echo "Please specify target branch to create pull request for"
+    echo "Usage: git pullrequest target-branch"
+    exit 1
+fi
+
+URL=${URL/<SOURCE>/$SOURCE_BRANCH}
+URL=${URL/<TARGET>/$TARGET_BRANCH}
+start "$URL"
