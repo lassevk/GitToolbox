@@ -1,0 +1,47 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+COMMIT=$(git rev-parse $1)
+COMMIT_NAME="Commit $1"
+if [ "$COMMIT" != "$1" ]; then
+    COMMIT_NAME="$COMMIT_NAME = $COMMIT"
+fi
+if [ -z "$COMMIT" ]; then
+    if [ -z "$(git status -s)" ]; then
+        echo "No changes"
+        exit 0
+    else
+        echo "Comparing against unmodified"
+        COMMIT_NAME="Unmodified"
+        COMMIT=HEAD
+    fi
+fi
+
+TEMPDIR=$(mktemp -d)
+CHANGES=$(git diff --name-status --diff-filter=ACMRTUXB $COMMIT)
+ANY_CHANGES=0
+while read -r LINE;
+do
+    MODIFICATION=${LINE:0:1}
+    if [ -z "$MODIFICATION" ]; then
+        continue
+    fi
+    FILENAME=${LINE:2}
+    TARGET=$TEMPDIR/$FILENAME
+    TARGET_DIR=$(dirname "${TARGET}")
+    mkdir -p $TARGET_DIR
+    git show "$COMMIT:$FILENAME" > $TARGET
+    ANY_CHANGES=1
+done <<< $CHANGES
+
+if [ "$ANY_CHANGES" = "1" ]; then
+    BC=$(echo "/$DROPBOX/Tools/Beyond Compare 4/bcomp.exe" | sed 's/\\/\//g' | sed 's/://')
+    "$BC" $TEMPDIR . //leftreadonly //title1="$COMMIT_NAME"
+else
+    echo "No changes detected"
+fi
+rm -rf "$TEMPDIR"
