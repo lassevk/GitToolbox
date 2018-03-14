@@ -22,7 +22,7 @@ if [ -z "$COMMIT" ]; then
 fi
 
 TEMPDIR=$(mktemp -d)
-CHANGES=$(git diff --name-status --diff-filter=ACMRTUXB $COMMIT)
+CHANGES=$(git diff --name-status --diff-filter=DCMRTUXB $COMMIT)
 ANY_CHANGES=0
 while read -r LINE;
 do
