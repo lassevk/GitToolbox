@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+GITX="/C/Program Files/GitExtensions/GitExtensions.exe"
+if [ -f "$GITX" ]; then
+    "$GITX" browse .
+    exit 0
+fi
+
+GITX="/C/Program Files (x86)/GitExtensions/GitExtensions.exe"
+if [ -f "$GITX" ]; then
+    "$GITX" browse .
+    exit 0
+fi
+
+echo "GitExtensions does not seem to be installed"
+exit 1
