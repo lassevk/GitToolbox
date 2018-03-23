@@ -8,7 +8,7 @@ if [ "$*" == "--clear" ]; then
     fi
 elif [ ! -z "$*" ]; then
     echo "Setting working-on git commit message template to: $*"
-    echo "$*:" >~/.gitmessage
+    echo "$*: " >~/.gitmessage
     git config --global commit.template ~/.gitmessage
 else
     if [ -f ~/.gitmessage ]; then
