@@ -5,7 +5,35 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi;
 
-if [ -z "$1" ]; then
+
+for arg in "$@"
+do
+    if [[ "$arg" == -* ]]; then
+        case "$arg" in
+        "-j" | "--jira")
+            JIRA_ISSUES=1
+            ;;
+        "-u" | "--url")
+            JIRA_URL_ONLY=1
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            exit 1
+            ;;
+        esac
+    else
+        if [ -z "$BRANCH1" ]; then
+            BRANCH1=$arg
+        elif [ -z "$BRANCH2" ]; then
+            BRANCH2=$arg
+        else
+            echo "Unknown argument: $arg"
+            exit 1
+        fi
+    fi
+done
+
+if [ -z "$BRANCH1" ]; then
     BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
     if [ -z "$BRANCH" ]; then
         echo "not on a branch"
@@ -17,20 +45,56 @@ if [ -z "$1" ]; then
         exit 1
     fi;
     echo "Comparing with $UPSTREAM_BRANCH"
+elif [ -z "$BRANCH2" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name $BRANCH1 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+    echo "Comparing with $UPSTREAM_BRANCH"
 else
-    if [ -z "$2"  ]; then
-        BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
-        if [ -z "$BRANCH" ]; then
-            echo "not on a branch"
-            exit 1
-        fi;
-        UPSTREAM_BRANCH=$1
-        echo "Comparing with $UPSTREAM_BRANCH"
-    else
-        BRANCH=$1
-        UPSTREAM_BRANCH=$2
-        echo "Comparing $BRANCH with $UPSTREAM_BRANCH"
-    fi
-fi;
+    BRANCH=$BRANCH1
+    UPSTREAM_BRANCH=$BRANCH2
+    echo "Comparing $BRANCH1 with $BRANCH2"
+fi
 
-git lg $UPSTREAM_BRANCH..$BRANCH $*
+if [ "$JIRA_ISSUES" == "1" ]; then
+    JIRAURL=$(git config integration.jira)
+    if [ -z "$JIRAURL" ]; then
+        echo "Use git config --local integration.jira \"(root url to jira installation, usually just the domain name)\""
+        echo "Make sure to add a trailing slash"
+        exit 1
+    fi
+
+    FIRST=1
+    for line in $(git log $UPSTREAM_BRANCH..$BRANCH --pretty=format:'%s' | grep -o "GAT[PW]-[0-9][0-9]*" | sort | uniq)
+    do
+        if [ $FIRST == 1 ]; then
+            echo "Jira issues:"
+            URL="${JIRAURL}issues/?jql=Key%20in%20($line"
+            FIRST=0
+        else
+            URL="$URL%2C%20$line"
+        fi
+        # echo "  $line"
+    done
+    if [ $FIRST == 1 ]; then
+        echo "No jira issues found"
+    else
+        URL="$URL)"
+        echo
+        echo "Open this link to look at the issues:"
+        echo "  $URL"
+
+        if [ -z "$JIRA_URL_ONLY" ]; then
+            start $URL
+        fi
+    fi
+else
+    git lg $UPSTREAM_BRANCH..$BRANCH
+fi
