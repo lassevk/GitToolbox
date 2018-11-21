@@ -1,0 +1,64 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+git fetch
+
+for arg in "$@"
+do
+    if [[ "$arg" == -* ]]; then
+        echo "this command does not accept any options"
+        exit 1
+    else
+        if [ -z "$BRANCH1" ]; then
+            BRANCH1=$arg
+        elif [ -z "$BRANCH2" ]; then
+            BRANCH2=$arg
+        else
+            echo "Unknown argument: $arg"
+            exit 1
+        fi
+    fi
+done
+
+if [ -z "$BRANCH1" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+elif [ -z "$BRANCH2" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name $BRANCH1 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+else
+    BRANCH=$BRANCH1
+    UPSTREAM_BRANCH=$BRANCH2
+fi
+
+BRANCH_SHA="$(git rev-parse $BRANCH)"
+UPSTREAM_BRANCH_SHA="$(git rev-parse $UPSTREAM_BRANCH)"
+
+if [ "$BRANCH_SHA" == "$UPSTREAM_BRANCH_SHA" ]; then
+    echo No unpushed commits
+    exit 0
+fi
+
+echo "Squashing $(git rev-parse --abbrev-ref $BRANCH) with respect to $(git rev-parse --abbrev-ref $UPSTREAM_BRANCH)"
+TARGET_SHA=$(git merge-base $BRANCH $UPSTREAM_BRANCH)
+git rebase --autostash --autosquash -i $TARGET_SHA

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+FIXUP_COMMIT=$(git rev-parse HEAD)
+git commit --fixup $FIXUP_COMMIT

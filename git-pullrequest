@@ -17,9 +17,13 @@ SOURCE_BRANCH=$(git symbolic-ref HEAD)
 TARGET_BRANCH=$1
 
 if [ -z "$TARGET_BRANCH" ]; then
-    echo "Please specify target branch to create pull request for"
-    echo "Usage: git pullrequest target-branch"
-    exit 1
+    TARGET_BRANCH=$(git config --local integration.pullrequest-target)
+    if [ -z "$TARGET_BRANCH" ]; then
+        echo "Please specify target branch to create pull request for"
+        echo "Usage: git pullrequest target-branch"
+        echo "You can also configure this with: git config --local integration.pullrequest-target name-of-target-branch"
+        exit 1
+    fi
 fi
 
 URL=${URL/<SOURCE>/$SOURCE_BRANCH}
