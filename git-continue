@@ -1,0 +1,31 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+LINES="$(set GIT_TRACE=&& git status --branch --short --porcelain=2 | grep ^u.*)"
+while read -r line; do
+    if ! [ -z "$line" ]; then
+        git mergetool
+        exit 0
+    fi
+done <<< "$LINES"
+
+if [ -d "$(git rev-parse --git-path rebase-merge)" ]; then
+    git rebase --continue
+    exit 0
+elif [ -d "$(git rev-parse --git-path rebase-apply)" ]; then
+    git rebase --continue
+    exit 0
+elif [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+    git merge --continue
+    exit 0
+elif [ -f "$(git rev-parse --git-path CHERRY_PICK_HEAD)" ]; then
+    git cherry-pick --continue
+    exit 0
+fi
+
+echo Unable to continue, unknown state
+exit 1
