@@ -1,0 +1,114 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+for arg in "$@"
+do
+    if [[ "$arg" == -* ]]; then
+        case "$arg" in
+        "-j" | "--jira")
+            JIRA_ISSUES=1
+            ;;
+        "-u" | "--url")
+            JIRA_URL_ONLY=1
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            exit 1
+            ;;
+        esac
+    else
+        if [ -z "$BRANCH1" ]; then
+            BRANCH1=$arg
+        elif [ -z "$BRANCH2" ]; then
+            BRANCH2=$arg
+        else
+            echo "Unknown argument: $arg"
+            exit 1
+        fi
+    fi
+done
+
+if [ -z "$BRANCH1" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+    echo "Comparing with $UPSTREAM_BRANCH"
+elif [ -z "$BRANCH2" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name $BRANCH1 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+    echo "Comparing with $UPSTREAM_BRANCH"
+else
+    BRANCH=$BRANCH1
+    UPSTREAM_BRANCH=$BRANCH2
+    echo "Comparing $BRANCH1 with $BRANCH2"
+fi
+
+BEHIND=$(git log $BRANCH..$UPSTREAM_BRANCH)
+AHEAD=$(git log $UPSTREAM_BRANCH..$BRANCH)
+
+set -- `git rev-list --left-right --count $UPSTREAM_BRANCH...$BRANCH`
+BEHIND_COUNT="$1"
+AHEAD_COUNT="$2"
+
+if [ -z "$BEHIND" ]; then
+    if [ -z "$AHEAD" ]; then
+        echo ""
+        echo "        +-- $BRANCH"
+        echo "        v"
+        echo "O---O---O"
+        echo "        ^"
+        echo "        +-- $UPSTREAM_BRANCH"
+        exit 0
+    else
+        echo ""
+        echo "                +-- $BRANCH"
+        echo "                v"
+        echo "O---O---O- ... -O (+$AHEAD_COUNT ahead)"
+        echo "        ^"
+        echo "        +-- $UPSTREAM_BRANCH"
+        exit 0
+    fi;
+else
+    if [ -z "$AHEAD" ]; then
+        echo ""
+        echo "        +-- $BRANCH"
+        echo "        v"
+        echo "O---O---O- ... -O ($BEHIND_COUNT behind)"
+        echo "                ^"
+        echo "                +-- $UPSTREAM_BRANCH"
+        exit 0
+    else
+        echo ""
+        echo "                  +-- $BRANCH"
+        echo "                  v"
+        echo "           + ... -O ($AHEAD_COUNT ahead)"
+        echo "          /"
+        echo "         /"
+        echo "O---O---O"
+        echo "         \\"
+        echo "          \\"
+        echo "           + ... -O ($BEHIND_COUNT behind)"
+        echo "                  ^"
+        echo "                  +-- $UPSTREAM_BRANCH"
+        exit 0
+    fi;
+fi;

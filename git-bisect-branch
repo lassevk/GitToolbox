@@ -1,0 +1,64 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+
+for arg in "$@"
+do
+    if [[ "$arg" == -* ]]; then
+        case "$arg" in
+        *)
+            echo "Unknown option: $arg"
+            exit 1
+            ;;
+        esac
+    else
+        if [ -z "$BRANCH1" ]; then
+            BRANCH1=$arg
+        elif [ -z "$BRANCH2" ]; then
+            BRANCH2=$arg
+        else
+            echo "Unknown argument: $arg"
+            exit 1
+        fi
+    fi
+done
+
+if [ -z "$BRANCH1" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+    echo "Comparing with $UPSTREAM_BRANCH"
+elif [ -z "$BRANCH2" ]; then
+    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    if [ -z "$BRANCH" ]; then
+        echo "not on a branch"
+        exit 1
+    fi;
+    UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name $BRANCH1 2>/dev/null)
+    if [ -z "$UPSTREAM_BRANCH" ]; then
+        echo "$BRANCH does not have an upstream branch"
+        exit 1
+    fi;
+    echo "Comparing with $UPSTREAM_BRANCH"
+else
+    BRANCH=$BRANCH1
+    UPSTREAM_BRANCH=$BRANCH2
+    echo "Comparing $BRANCH1 with $BRANCH2"
+fi
+
+echo "bisecting:"
+echo "  good: $UPSTREAM_BRANCH"
+echo "  bad:  $BRANCH"
+
+git bisect start "$BRANCH" "$UPSTREAM_BRANCH"

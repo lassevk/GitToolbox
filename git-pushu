@@ -1,0 +1,22 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+if [ -z "$BRANCH" ]; then
+    echo "not on a branch"
+    exit 1
+fi;
+BRANCH="$(git rev-parse --abbrev-ref --symbolic-full-name $BRANCH 2>/dev/null)"
+
+UPSTREAM_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+if ! [ -z "$UPSTREAM_BRANCH" ]; then
+    echo "$BRANCH already have an upstream branch"
+    exit 1
+fi;
+echo "Pushing $BRANCH and setting upstream"
+
+git push --set-upstream origin $BRANCH
