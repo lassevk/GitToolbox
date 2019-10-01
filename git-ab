@@ -8,18 +8,8 @@ fi;
 for arg in "$@"
 do
     if [[ "$arg" == -* ]]; then
-        case "$arg" in
-        "-j" | "--jira")
-            JIRA_ISSUES=1
-            ;;
-        "-u" | "--url")
-            JIRA_URL_ONLY=1
-            ;;
-        *)
-            echo "Unknown option: $arg"
-            exit 1
-            ;;
-        esac
+        echo "Unknown option: $arg"
+        exit 1
     else
         if [ -z "$BRANCH1" ]; then
             BRANCH1=$arg
