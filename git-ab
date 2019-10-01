@@ -33,7 +33,7 @@ do
 done
 
 if [ -z "$BRANCH1" ]; then
-    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null)" || BRANCH=""
     if [ -z "$BRANCH" ]; then
         echo "not on a branch"
         exit 1
@@ -45,7 +45,7 @@ if [ -z "$BRANCH1" ]; then
     fi;
     echo "Comparing with $UPSTREAM_BRANCH"
 elif [ -z "$BRANCH2" ]; then
-    BRANCH="$(git symbolic-ref HEAD 2>/dev/null)" || BRANCH=""
+    BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null)" || BRANCH=""
     if [ -z "$BRANCH" ]; then
         echo "not on a branch"
         exit 1
@@ -69,12 +69,21 @@ set -- `git rev-list --left-right --count $UPSTREAM_BRANCH...$BRANCH`
 BEHIND_COUNT="$1"
 AHEAD_COUNT="$2"
 
+BEHIND_ENDING="s"
+AHEAD_ENDING="s"
+if [ "$AHEAD_COUNT" -eq "1" ]; then
+    AHEAD_ENDING=""
+fi
+if [ "$BEHIND_COUNT" -eq "1" ]; then
+    BEHIND_ENDING=""
+fi
+
 if [ -z "$BEHIND" ]; then
     if [ -z "$AHEAD" ]; then
         echo ""
         echo "        +-- $BRANCH"
         echo "        v"
-        echo "O---O---O"
+        echo "O---O---O        = $BRANCH is in sync with $UPSTREAM_BRANCH"
         echo "        ^"
         echo "        +-- $UPSTREAM_BRANCH"
         exit 0
@@ -82,7 +91,7 @@ if [ -z "$BEHIND" ]; then
         echo ""
         echo "                +-- $BRANCH"
         echo "                v"
-        echo "O---O---O- ... -O (+$AHEAD_COUNT ahead)"
+        echo "O---O---O- ... -O        = $BRANCH is $AHEAD_COUNT commit$AHEAD_ENDING ahead of $UPSTREAM_BRANCH"
         echo "        ^"
         echo "        +-- $UPSTREAM_BRANCH"
         exit 0
@@ -92,7 +101,7 @@ else
         echo ""
         echo "        +-- $BRANCH"
         echo "        v"
-        echo "O---O---O- ... -O ($BEHIND_COUNT behind)"
+        echo "O---O---O- ... -O        = $UPSTREAM_BRANCH is $BEHIND_COUNT commit$BEHIND_ENDING ahead of $BRANCH"
         echo "                ^"
         echo "                +-- $UPSTREAM_BRANCH"
         exit 0
@@ -100,13 +109,13 @@ else
         echo ""
         echo "                  +-- $BRANCH"
         echo "                  v"
-        echo "           + ... -O ($AHEAD_COUNT ahead)"
+        echo "           + ... -O        = $BRANCH is $AHEAD_COUNT commit$AHEAD_ENDING ahead of $UPSTREAM_BRANCH"
         echo "          /"
         echo "         /"
         echo "O---O---O"
         echo "         \\"
         echo "          \\"
-        echo "           + ... -O ($BEHIND_COUNT behind)"
+        echo "           + ... -O        = $UPSTREAM_BRANCH is $BEHIND_COUNT commit$BEHIND_ENDING ahead of $BRANCH"
         echo "                  ^"
         echo "                  +-- $UPSTREAM_BRANCH"
         exit 0
