@@ -13,7 +13,7 @@ if [ -z "$URL" ]; then
     exit 1
 fi
 
-SOURCE_BRANCH=$(git symbolic-ref HEAD)
+SOURCE_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TARGET_BRANCH=$1
 
 if [ -z "$TARGET_BRANCH" ]; then
