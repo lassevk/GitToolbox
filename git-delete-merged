@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+git fetch
+
+WORK_TREES=$(git branch --merged | grep "^[^*+]")
+
+REMOTES=$(git remote)
+while read -r branch; do
+    if [ -n "$branch" ]; then
+        echo deleting $branch
+        git branch -d $branch
+
+        while read -r remote; do
+            SHA=$(git show-ref --verify --quiet $remote/$branch)
+            if [ -n "$SHA" ]; then
+                REMOTE="${branch#* }"
+                git push "$REMOTE" -d "$branch"
+            fi;
+        done <<< "$REMOTES"
+    fi;
+done <<< "$WORK_TREES"

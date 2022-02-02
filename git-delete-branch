@@ -13,8 +13,11 @@ fi;
 echo Deleting branch on all remotes
 REMOTES=$(git remote)
 while read -r line; do
-    REMOTE="${line#* }"
-    if ! git push "$REMOTE" -d "$1"; then
-        exit 1
+    SHA=$(git show-ref --verify --quiet $remote/$branch)
+    if [ -n "$SHA" ]; then
+        REMOTE="${line#* }"
+        if ! git push "$REMOTE" -d "$1"; then
+            exit 1
+        fi;
     fi;
 done <<< "$REMOTES"

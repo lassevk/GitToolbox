@@ -1,18 +1,25 @@
 #!/bin/sh
 
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo error: not in a git repository or work tree
+    exit 1
+fi;
+
+GIT_DIR=$(git rev-parse --path-format=absolute --git-dir 2>/dev/null)
+
 if [ "$*" == "--clear" ]; then
     echo "Clearing working-on git commit message template"
-    git config --global --unset commit.template
-    if [ -f ~/.gitmessage ]; then
-        rm ~/.gitmessage
+    git config --unset commit.template
+    if [ -f $GIT_DIR/.gitmessage ]; then
+        rm $GIT_DIR/.gitmessage
     fi
 elif [ ! -z "$*" ]; then
     echo "Setting working-on git commit message template to: $*"
-    echo "$*: " >~/.gitmessage
-    git config --global commit.template ~/.gitmessage
+    echo "$*: " >$GIT_DIR/.gitmessage
+    git config commit.template $GIT_DIR/.gitmessage
 else
-    if [ -f ~/.gitmessage ]; then
-        echo "Current working-on git commit message template is: $(<~/.gitmessage)"
+    if [ -f $GIT_DIR/.gitmessage ]; then
+        echo "Current working-on git commit message template is: $(<$GIT_DIR/.gitmessage)"
         echo Use 'git working-on --clear' to clear
     else
         echo "There is no working-on git commit message template configured"
